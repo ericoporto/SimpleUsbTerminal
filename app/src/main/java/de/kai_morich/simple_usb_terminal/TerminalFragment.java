@@ -13,6 +13,7 @@ import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbManager;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.IBinder;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -29,10 +30,19 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.util.Log;
 
 import com.hoho.android.usbserial.driver.UsbSerialDriver;
 import com.hoho.android.usbserial.driver.UsbSerialPort;
 import com.hoho.android.usbserial.driver.UsbSerialProber;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.OutputStreamWriter;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 
 public class TerminalFragment extends Fragment implements ServiceConnection, SerialListener {
 
@@ -270,10 +280,40 @@ public class TerminalFragment extends Fragment implements ServiceConnection, Ser
         receiveText.append(new String(data));
     }
 
+    private void writeToFile(String data,Context context) {
+        File path = context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS);
+        //String date_as_text = new SimpleDateFormat("dd-MM-yyyy_hh-mm-ss").format(new Date());
+        String log_filename = "logfile.txt";
+
+
+        File file = new File(path, log_filename);
+        if (!file.exists()) {
+            try {
+                file.createNewFile();
+            } catch (IOException ioe) {
+                ioe.printStackTrace();
+            }
+        }
+        try {
+            FileOutputStream fileOutputStream = new FileOutputStream(file);
+            OutputStreamWriter writer = new OutputStreamWriter(fileOutputStream);
+            writer.append(data);
+            writer.close();
+            fileOutputStream.close();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
+
     void status(String str) {
         SpannableStringBuilder spn = new SpannableStringBuilder(str+'\n');
         spn.setSpan(new ForegroundColorSpan(getResources().getColor(R.color.colorStatusText)), 0, spn.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
         receiveText.append(spn);
+        Context context = getContext();
+        writeToFile(spn.toString(), context);
     }
 
     /*
